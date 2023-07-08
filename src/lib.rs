@@ -1,3 +1,4 @@
+#[cfg(feature = "rt-wasmtime")]
 use wasmtime::{Memory, Store};
 
 /// A single **guest-side** paramter which can be moved across guest-host boundary.
@@ -71,6 +72,7 @@ impl GuestStringView {
     }
 
     /// Constructs a `&str`, a reference of string slice from this view.
+    #[cfg(feature = "rt-wasmtime")]
     pub fn as_slice<T>(self, memory: Memory, store: &Store<T>) -> &str {
         // SAFETY: this is safe because the wasmtime API asserts the `store` owns the `memory` and
         // the lifetime of the slice reference is bounded by the store's lifetime.
@@ -118,6 +120,7 @@ impl GuestMemoryView {
     }
 
     /// Constructs a `&[u8]`, a reference of u8 slice from this view.
+    #[cfg(feature = "rt-wasmtime")]
     pub fn as_str<T>(self, memory: Memory, store: &Store<T>) -> &[u8] {
         // safety:
         memory
