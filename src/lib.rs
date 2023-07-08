@@ -24,7 +24,32 @@ macro_rules! identity_impls {
     };
 }
 
-identity_impls!(u8, u16, u32, u64, i8, i16, i32, i64);
+identity_impls!(
+    u8,
+    u16,
+    u32,
+    u64,
+    i8,
+    i16,
+    i32,
+    i64,
+    *const u8,
+    *const u16,
+    *const u32,
+    *const u64,
+    *const i8,
+    *const i16,
+    *const i32,
+    *const i64,
+    *mut u8,
+    *mut u16,
+    *mut u32,
+    *mut u64,
+    *mut i8,
+    *mut i16,
+    *mut i32,
+    *mut i64,
+);
 
 /// A function definition that can be shared between a guest and a host.
 pub trait Function {}
