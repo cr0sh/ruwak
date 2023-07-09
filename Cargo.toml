@@ -14,7 +14,7 @@ default = ["rt-wasmtime"]
 rt-wasmtime = ["wasmtime"]
 
 [workspace]
-members = ["test"]
+members = ["ruwak-macros", "test"]
 
 [workspace.dependencies]
 wasmtime = "10.0.1"
