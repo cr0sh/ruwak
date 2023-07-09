@@ -3,58 +3,141 @@ use wasmtime::{Memory, Store};
 
 /// A single **guest-side** paramter which can be moved across guest-host boundary.
 pub trait Parameter {
+    /// A host-side type representation.
     type Host;
-    fn from_host(host: Self::Host) -> Self;
-    fn into_host(self) -> Self::Host;
+    /// An intermediate representation to cross the FFI boundary.
+    type Abi: Abi<Self::Host>;
+
+    fn into_abi(self) -> Self::Abi;
+    fn from_abi(abi: Self::Abi) -> Self;
+}
+
+/// A single WASM ABI compatible type.
+pub trait Abi<Host> {
+    fn into_host(self) -> Host;
+    fn from_host(host: Host) -> Self;
+}
+
+impl<T> Abi<T> for T {
+    #[inline]
+    fn into_host(self) -> T {
+        self
+    }
+
+    #[inline]
+    fn from_host(host: T) -> Self {
+        host
+    }
 }
 
 macro_rules! identity_impls {
     () => {};
-    ($type:ty $(,$other:ty)* $(,)?) => {
-        identity_impls!(@ $type);
-        identity_impls!($($other,)*);
+    ($type:ty $(as $cast:ty $(as $castcast:ty)?)? $(,$other:ty $(as $cast_other:ty $(as $castcast_other:ty)?)?)* $(,)?) => {
+        identity_impls!(@ $type $(as $cast $(as $castcast)?)?);
+        identity_impls!($($other $(as $cast_other $(as $castcast_other)?)?,)*);
     };
     (@ $type:ty) => {
         impl $crate::Parameter for $type {
             type Host = $type;
-            fn from_host(host: Self::Host) -> Self {
-                host
-            }
-            fn into_host(self) -> Self::Host {
+            type Abi = $type;
+
+            #[inline]
+            fn into_abi(self) -> Self::Abi {
                 self
+            }
+
+            #[inline]
+            fn from_abi(abi: Self::Abi) -> Self {
+                abi
+            }
+        }
+    };
+    (@ $type:ty as $cast:ty) => {
+        impl $crate::Parameter for $type {
+            type Host = $type;
+            type Abi = $cast;
+
+            #[inline]
+            fn into_abi(self) -> Self::Abi {
+                self as $cast
+            }
+
+            #[inline]
+            fn from_abi(abi: Self::Abi) -> Self {
+                abi as $type
+            }
+        }
+
+        impl Abi<$type> for $cast {
+            #[inline]
+            fn into_host(self) -> $type {
+                self as $type
+            }
+
+            #[inline]
+            fn from_host(host: $type) -> Self {
+                host as Self
+            }
+        }
+    };
+    (@ $type:ty as $cast:ty as $castcast:ty) => {
+        impl $crate::Parameter for $type {
+            type Host = $type;
+            type Abi = $castcast;
+
+            #[inline]
+            fn into_abi(self) -> Self::Abi {
+                self as $cast as $castcast
+            }
+
+            #[inline]
+            fn from_abi(abi: Self::Abi) -> Self {
+                abi as $cast as $type
+            }
+        }
+
+        impl Abi<$type> for $castcast {
+            #[inline]
+            fn into_host(self) -> $type {
+                self as $type
+            }
+
+            #[inline]
+            fn from_host(host: $type) -> Self {
+                host as Self
             }
         }
     };
 }
 
 identity_impls!(
-    u8,
-    u16,
+    u8 as u32,
+    u16 as u32,
     u32,
     u64,
-    i8,
-    i16,
+    i8 as i32,
+    i16 as i32,
     i32,
     i64,
-    *const u8,
-    *const u16,
-    *const u32,
-    *const u64,
-    *const i8,
-    *const i16,
-    *const i32,
-    *const i64,
-    *mut u8,
-    *mut u16,
-    *mut u32,
-    *mut u64,
-    *mut i8,
-    *mut i16,
-    *mut i32,
-    *mut i64,
+    *const u8 as usize as u32,
+    *const u16 as usize as u32,
+    *const u32 as usize as u32,
+    *const u64 as usize as u32,
+    *const i8 as usize as u32,
+    *const i16 as usize as u32,
+    *const i32 as usize as u32,
+    *const i64 as usize as u32,
+    *mut u8 as usize as u32,
+    *mut u16 as usize as u32,
+    *mut u32 as usize as u32,
+    *mut u64 as usize as u32,
+    *mut i8 as usize as u32,
+    *mut i16 as usize as u32,
+    *mut i32 as usize as u32,
+    *mut i64 as usize as u32,
 );
 
-/// A FFI-safe `&str` equivalent passed from guest side.
+/// A FFI-safe `&str` equivalent passed from the guest side.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct GuestStringView {
@@ -92,17 +175,18 @@ impl GuestStringView {
 
 impl<'a> Parameter for &'a str {
     type Host = GuestStringView;
+    type Abi = GuestStringView;
 
-    fn from_host(_host: Self::Host) -> Self {
-        unreachable!("host created an instance of GuestStringView")
+    fn into_abi(self) -> Self::Abi {
+        GuestStringView::new(self)
     }
 
-    fn into_host(self) -> Self::Host {
-        GuestStringView::new(self)
+    fn from_abi(_abi: Self::Abi) -> Self {
+        unreachable!("host created an instance of GuestStringView")
     }
 }
 
-/// A FFI-safe `&[u8]` equivalent passed from guest side.
+/// A FFI-safe `&[u8]` equivalent passed from the guest side.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct GuestMemoryView {
@@ -135,13 +219,14 @@ impl GuestMemoryView {
 
 impl<'a> Parameter for &'a [u8] {
     type Host = GuestMemoryView;
+    type Abi = GuestMemoryView;
 
-    fn from_host(_host: Self::Host) -> Self {
-        unreachable!("host created an instance of GuestMemoryView")
+    fn into_abi(self) -> Self::Abi {
+        GuestMemoryView::new(self)
     }
 
-    fn into_host(self) -> Self::Host {
-        GuestMemoryView::new(self)
+    fn from_abi(_abi: Self::Abi) -> Self {
+        unreachable!("host created an instance of GuestMemoryView")
     }
 }
 
