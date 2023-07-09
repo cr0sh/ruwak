@@ -54,7 +54,7 @@ identity_impls!(
     *mut i64,
 );
 
-/// A FFI-safe `&str` equivalent passed from guest side.
+/// A FFI-safe `&str` equivalent passed from the guest side.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct GuestStringView {
@@ -102,7 +102,7 @@ impl<'a> Parameter for &'a str {
     }
 }
 
-/// A FFI-safe `&[u8]` equivalent passed from guest side.
+/// A FFI-safe `&[u8]` equivalent passed from the guest side.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct GuestMemoryView {
