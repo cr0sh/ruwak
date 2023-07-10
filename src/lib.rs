@@ -240,14 +240,14 @@ macro_rules! fn_impls {
         fn_impls!($($other,)*);
     };
     (@ $head:tt) => {
-        impl<$head> $crate::Function for fn($head)
+        impl<$head> $crate::Function for Box<dyn Fn($head)>
         where
             $head: $crate::Parameter
         {
         }
     };
     (@ $head:tt $(,$other:tt)*) => {
-        impl<$head $(,$other)*> $crate::Function for fn($head $(,$other)*)
+        impl<$head $(,$other)*> $crate::Function for Box<dyn Fn($head $(,$other)*)>
         where
             $head: $crate::Parameter
             $(,
