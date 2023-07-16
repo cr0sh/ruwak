@@ -20,6 +20,6 @@ jobs:
     - name: Build
       run: cargo build --verbose --workspace
     - name: Clippy
-      run: cargo clippy --verbose --workspace -D warnings
+      run: cargo clippy --verbose --workspace -- -D warnings
     - name: Run tests
       run: cargo test --verbose --workspace
