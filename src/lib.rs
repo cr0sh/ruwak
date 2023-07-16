@@ -173,16 +173,37 @@ impl GuestStringView {
     }
 }
 
+impl Abi<GuestStringView> for u64 {
+    fn into_host(self) -> GuestStringView {
+        GuestStringView {
+            len: u32::from_le_bytes(self.to_le_bytes()[0..4].try_into().unwrap()),
+            ptr: u32::from_le_bytes(self.to_le_bytes()[4..8].try_into().unwrap()),
+        }
+    }
+
+    fn from_host(_host: GuestStringView) -> Self {
+        unreachable!("a host should not pass an instance of GuestStringView to a guest")
+    }
+}
+
 impl<'a> Parameter for &'a str {
     type Host = GuestStringView;
-    type Abi = GuestStringView;
+    type Abi = u64;
 
     fn into_abi(self) -> Self::Abi {
-        GuestStringView::new(self)
+        u64::from_le_bytes(
+            [
+                u32::try_from(self.as_ptr() as usize).unwrap().to_le_bytes(),
+                u32::try_from(self.len()).unwrap().to_le_bytes(),
+            ]
+            .concat()
+            .try_into()
+            .unwrap(),
+        )
     }
 
     fn from_abi(_abi: Self::Abi) -> Self {
-        unreachable!("host created an instance of GuestStringView")
+        unreachable!("a host should not pass an instance of GuestStringView to a guest")
     }
 }
 
@@ -217,16 +238,37 @@ impl GuestMemoryView {
     }
 }
 
+impl Abi<GuestMemoryView> for u64 {
+    fn into_host(self) -> GuestMemoryView {
+        GuestMemoryView {
+            len: u32::from_le_bytes(self.to_le_bytes()[0..4].try_into().unwrap()),
+            ptr: u32::from_le_bytes(self.to_le_bytes()[4..8].try_into().unwrap()),
+        }
+    }
+
+    fn from_host(_host: GuestMemoryView) -> Self {
+        unreachable!("a host should not pass an instance of GuestMemoryView to a guest")
+    }
+}
+
 impl<'a> Parameter for &'a [u8] {
     type Host = GuestMemoryView;
-    type Abi = GuestMemoryView;
+    type Abi = u64;
 
     fn into_abi(self) -> Self::Abi {
-        GuestMemoryView::new(self)
+        u64::from_le_bytes(
+            [
+                u32::try_from(self.as_ptr() as usize).unwrap().to_le_bytes(),
+                u32::try_from(self.len()).unwrap().to_le_bytes(),
+            ]
+            .concat()
+            .try_into()
+            .unwrap(),
+        )
     }
 
     fn from_abi(_abi: Self::Abi) -> Self {
-        unreachable!("host created an instance of GuestMemoryView")
+        unreachable!("a host should not pass an instance of GuestMemoryView to a guest")
     }
 }
 
