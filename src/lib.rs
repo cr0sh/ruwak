@@ -191,15 +191,21 @@ impl<'a> Parameter for &'a str {
     type Abi = u64;
 
     fn into_abi(self) -> Self::Abi {
-        u64::from_le_bytes(
-            [
-                u32::try_from(self.as_ptr() as usize).unwrap().to_le_bytes(),
-                u32::try_from(self.len()).unwrap().to_le_bytes(),
-            ]
-            .concat()
-            .try_into()
-            .unwrap(),
-        )
+        #[cfg(target_family = "wasm")]
+        {
+            u64::from_le_bytes(
+                [
+                    u32::try_from(self.as_ptr() as usize).unwrap().to_le_bytes(),
+                    u32::try_from(self.len()).unwrap().to_le_bytes(),
+                ]
+                .concat()
+                .try_into()
+                .unwrap(),
+            )
+        }
+
+        #[cfg(not(target_family = "wasm"))]
+        unimplemented!("must be a webassembly platform")
     }
 
     fn from_abi(_abi: Self::Abi) -> Self {
@@ -256,15 +262,21 @@ impl<'a> Parameter for &'a [u8] {
     type Abi = u64;
 
     fn into_abi(self) -> Self::Abi {
-        u64::from_le_bytes(
-            [
-                u32::try_from(self.as_ptr() as usize).unwrap().to_le_bytes(),
-                u32::try_from(self.len()).unwrap().to_le_bytes(),
-            ]
-            .concat()
-            .try_into()
-            .unwrap(),
-        )
+        #[cfg(target_family = "wasm")]
+        {
+            u64::from_le_bytes(
+                [
+                    u32::try_from(self.as_ptr() as usize).unwrap().to_le_bytes(),
+                    u32::try_from(self.len()).unwrap().to_le_bytes(),
+                ]
+                .concat()
+                .try_into()
+                .unwrap(),
+            )
+        }
+
+        #[cfg(not(target_family = "wasm"))]
+        unimplemented!("must be a webassembly platform")
     }
 
     fn from_abi(_abi: Self::Abi) -> Self {
